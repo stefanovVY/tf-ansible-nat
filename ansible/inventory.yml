@@ -1,5 +1,7 @@
-[server]
-${SERVER_IP}   # Variable will be replaced by GitHub Actions
-
-[client]
-127.0.0.1      # The client is accessed through the server using SSH tunneling
+---
+all:
+  hosts:
+    server:
+      ansible_host: ${SERVER_IP}
+      ansible_user: ubuntu
+      ansible_ssh_common_args: '-o ProxyJump=ubuntu@${CLIENT_IP}'
