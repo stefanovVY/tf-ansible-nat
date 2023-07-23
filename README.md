@@ -1,4 +1,4 @@
-# tf-ansible-nat
+# Terraform and Ansible Deployment of EC2 with NAT with GHA
 Terraform and Ansible Deployment with GitHub Actions
 
 This repository contains code to deploy two EC2 instances with Terraform and configure them using Ansible. The first instance will act as a server for the second instance (client). The server will have internet access and a private network. The second instance will connect to the internet via NAT through the server instance. The server instance will be named "server" and the client instance will be named "client". Both instances will have the default user "sysadmin" and SSHD service enabled. Additionally, there will be a bash script with a cron job that checks the availability of its default gateway (Server- VMNIC2) once a week and provides output in the shell.
