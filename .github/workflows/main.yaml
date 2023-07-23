@@ -1,0 +1,55 @@
+name: Deploy EC2 Instances
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Install Terraform
+        run: |
+          sudo apt-get update
+          sudo apt-get install terraform
+        shell: bash
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: path/to/your/terraform/directory
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        working-directory: path/to/your/terraform/directory
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve tfplan
+        working-directory: path/to/your/terraform/directory
+
+      - name: Install Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install ansible
+        shell: bash
+
+      - name: Install Ansible Roles
+        run: ansible-galaxy install -r requirements.yml
+        working-directory: path/to/your/ansible/directory
+
+      - name: Run Ansible Playbook
+        run: ansible-playbook -i ansible/hosts ansible/playbook.yml
+        working-directory: path/to/your/ansible/directory

@@ -1,0 +1,63 @@
+name: Deploy EC2 Instances
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: "1.1.0"  # Replace with the desired Terraform version
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: SSH Keygen
+        run: ssh-keygen -f mykey-pair
+
+      - name: Terraform Apply
+        id: terraform_apply
+        run: terraform apply -auto-approve
+
+      - name: Set Terraform Outputs as Environment Variables
+        run: |
+          echo "::set-env name=SERVER_IP::$(terraform output -raw server_ip)"
+          echo "::set-env name=CLIENT_IP::$(terraform output -raw client_ip)"
+        shell: bash
+
+      - name: Install Dependencies
+        run: sudo apt update && sudo apt install -y ansible
+
+      - name: Configure SSH Key for Proxy Jump
+        run: |
+          mkdir -p ~/.ssh
+          touch ~/.ssh/config
+          echo "Host server" >> ~/.ssh/config
+          echo "  HostName ${SERVER_IP}" >> ~/.ssh/config
+          echo "  User ubuntu" >> ~/.ssh/config
+          echo "  ForwardAgent yes" >> ~/.ssh/config
+
+      - name: Run Ansible Playbook on Server
+        run: ansible-playbook -i ansible/inventory.yml ansible/server.yml
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: false
+
+      - name: Run Ansible Playbook on Client via Proxy
+        run: ssh -A ubuntu@${SERVER_IP} 'ansible-playbook -i ansible/inventory.yml ansible/client.yml'
+
+      - name: Destroy Terraform Infrastructure
+        id: destroy
+        continue-on-error: true
+        run: terraform destroy -auto-approve
+
+      - name: Clean up SSH Key Pair
+        run: |
+          rm mykey-pair
+          rm mykey-pair.pub

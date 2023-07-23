@@ -1,0 +1,64 @@
+- name: Configure server and client
+  hosts: server
+  become: yes
+  tasks:
+    - name: Install and enable SSHD service
+      apt:
+        name: openssh-server
+        state: present
+
+    - name: Configure iptables on server
+      iptables:
+        chain: INPUT
+        policy: DROP
+        state: enabled
+
+    - name: Allow incoming SSH on server
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 22
+        jump: ACCEPT
+
+    - name: Allow incoming HTTP on server
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 80
+        jump: ACCEPT
+
+    - name: Disable root SSH login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+        state: present
+
+    - name: Configure SSHD to block SSH brute force attacks
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^MaxAuthTries'
+        line: 'MaxAuthTries 3'
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        update_cache: yes
+
+    - name: Start Docker Service
+      service:
+        name: docker
+        state: started
+
+    - name: Pull Nginx Docker Image
+      docker_image:
+        name: nginx
+        source: pull
+
+    - name: Run Nginx Container
+      docker_container:
+        name: nginx_container
+        image: nginx
+        ports:
+          - "80:80"

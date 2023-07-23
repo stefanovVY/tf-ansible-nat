@@ -1,0 +1,58 @@
+- name: Configure server and client
+  hosts: client
+  become: yes
+  tasks:
+    - name: Install and enable SSHD service
+      apt:
+        name: openssh-server
+        state: present
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Allow incoming SSH on client
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 22
+        jump: ACCEPT
+
+    - name: Disable root SSH login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+        state: present
+
+    - name: Configure SSHD to block SSH brute force attacks
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^MaxAuthTries'
+        line: 'MaxAuthTries 3'
+        state: present
+
+    - name: Create bash script
+      copy:
+        dest: bash_script.sh
+        content: |
+          #!/bin/bash
+          gateway=$(ip route | grep default | awk '{print $3}')
+          ping -c 1 $gateway >/dev/null 2>&1
+          if [ $? -eq 0 ]; then
+            echo "Gateway is available"
+          else
+            echo "Gateway is not available"
+          fi
+      mode: "0755"
+
+    - name: Set up cron job for the bash script
+      cron:
+        name: "check_gateway"
+        minute: "0"  # Run every hour
+        job: "bash_script.sh"
+
+    - name: Install Lynx Browser
+      apt:
+        name: lynx
+        update_cache: yes
+
+    - name: Access Nginx on Server via Lynx
+      shell: lynx http://${SERVER_IP}
