@@ -16,8 +16,10 @@ Deployment Steps
 
 Clone this repository to your local machine:
 
+```
 git clone https://github.com/penevpt/tf-ansible-nat.git
 cd tf-ansible-nat
+```
 
 2. Configure AWS Credentials
 
