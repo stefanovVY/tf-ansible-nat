@@ -1,12 +1,11 @@
-# name: Wordpress destroy
+ name: Wordpress destroy
 
-# on:
-#   push:
-#     branches: [main]
-
-# jobs:
-#   destroy-infra:
-#     runs-on: ubuntu-22.04
+ on:
+   push:
+    branches: [main]
+  jobs:
+    destroy-infra:
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
