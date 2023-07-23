@@ -29,31 +29,38 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Set Terraform Outputs as Environment Variables
+
+      - name: Check for Terraform Outputs
         run: |
-          echo "::set-env name=SERVER_IP::$(terraform output -raw server_ip)"
-          echo "::set-env name=CLIENT_IP::$(terraform output -raw client_ip)"
-        shell: bash
+            if [ -z "$(terraform output -raw server_ip)" ] || [ -z "$(terraform output -raw client_ip)" ]; then
+              echo "Error: Missing or empty Terraform outputs."
+              exit 1
+            fi
+
+      - name: Create Environment File for Ansible
+        run: |
+            echo "SERVER_IP=$(terraform output -raw server_ip)" >> .env
+            echo "CLIENT_IP=$(terraform output -raw client_ip)" >> .env
 
       - name: Install Dependencies
         run: sudo apt update && sudo apt install -y ansible
 
       - name: Configure SSH Key for Proxy Jump
         run: |
-          mkdir -p ~/.ssh
-          touch ~/.ssh/config
-          echo "Host server" >> ~/.ssh/config
-          echo "  HostName ${SERVER_IP}" >> ~/.ssh/config
-          echo "  User ubuntu" >> ~/.ssh/config
-          echo "  ForwardAgent yes" >> ~/.ssh/config
+            mkdir -p ~/.ssh
+            touch ~/.ssh/config
+            echo "Host server" >> ~/.ssh/config
+            echo "  HostName $SERVER_IP" >> ~/.ssh/config
+            echo "  User ubuntu" >> ~/.ssh/config
+            echo "  ForwardAgent yes" >> ~/.ssh/config
 
       - name: Run Ansible Playbook on Server
         run: ansible-playbook -i ansible/inventory.yml ansible/server.yml
         env:
-          ANSIBLE_HOST_KEY_CHECKING: false
+            ANSIBLE_HOST_KEY_CHECKING: false
 
       - name: Run Ansible Playbook on Client via Proxy
-        run: ssh -A ubuntu@${SERVER_IP} 'ansible-playbook -i ansible/inventory.yml ansible/client.yml'
+        run: ssh -A ubuntu@$SERVER_IP 'ansible-playbook -i ansible/inventory.yml ansible/client.yml'
 
       - name: Destroy Terraform Infrastructure
         id: destroy
