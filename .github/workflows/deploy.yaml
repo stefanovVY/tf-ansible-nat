@@ -54,22 +54,22 @@ jobs:
         run: ansible-playbook -i ansible/inventory.yml ansible/client.yml
         env:
           ANSIBLE_HOST_KEY_CHECKING: false
-      # - name: Configure SSH Key for Proxy Jump
-      #   run: |
-      #       mkdir -p ~/.ssh
-      #       touch ~/.ssh/config
-      #       echo "Host server" >> ~/.ssh/config
-      #       echo "  HostName $SERVER_IP" >> ~/.ssh/config
-      #       echo "  User ubuntu" >> ~/.ssh/config
-      #       echo "  ForwardAgent yes" >> ~/.ssh/config
+      - name: Configure SSH Key for Proxy Jump
+        run: |
+            mkdir -p ~/.ssh
+            touch ~/.ssh/config
+             echo "Host server" >> ~/.ssh/config
+            echo "  HostName $SERVER_IP" >> ~/.ssh/config
+            echo "  User ubuntu" >> ~/.ssh/config
+             echo "  ForwardAgent yes" >> ~/.ssh/config
 
-      # - name: Run Ansible Playbook on Server
-      #   run: ansible-playbook -i ansible/inventory.yml ansible/server.yml
-      #   env:
-      #       ANSIBLE_HOST_KEY_CHECKING: false
+      - name: Run Ansible Playbook on Server
+        run: ansible-playbook -i ansible/inventory.yml ansible/server.yml
+        env:
+             ANSIBLE_HOST_KEY_CHECKING: false
 
-      # - name: Run Ansible Playbook on Client via Proxy
-      #   run: ssh -A ubuntu@$SERVER_IP 'ansible-playbook -i ansible/inventory.yml ansible/client.yml'
+      - name: Run Ansible Playbook on Client via Proxy
+        run: ssh -A ubuntu@$SERVER_IP 'ansible-playbook -i ansible/inventory.yml ansible/client.yml'
 
       - name: Destroy Terraform Infrastructure
         id: destroy
